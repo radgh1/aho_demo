@@ -327,6 +327,28 @@ with gr.Blocks(title="Plan A — Adaptive Hybrid Orchestration (AHO)") as demo:
 
     run_btn = gr.Button("Run AHO Simulation")
 
+    with gr.Accordion("Understanding the Graphs (Simple Explanation)", open=False):
+        gr.Markdown(
+            "## The First Graph: \"The Robot's Learning Journey\" 📈\n\n"
+            "This graph is like a **map of the robot's adventure** over time. It shows:\n\n"
+            "- **Up and down (Y-axis)**: How good the robot's answers are (accuracy) - higher is better!\n"
+            "- **Left to right (X-axis)**: How much work the robot does by itself (coverage) - more to the right means the robot does more work\n"
+            "- **Colors**: Different shades show how \"brave\" the robot is being (the confidence level it chooses)\n\n"
+            "**What you see:** The robot starts somewhere and moves around, trying different strategies. Sometimes it gets better at answers, sometimes it does more work. The colored dots show its path - like footprints in the snow showing where it walked!\n\n"
+            "## The Second Graph: \"The Robot's Best Spots\" 🎯\n\n"
+            "This graph shows the **perfect hiding spots** - the absolute best balances the robot found. It's like:\n\n"
+            "- **Each dot**: A \"sweet spot\" where the robot found a really good balance\n"
+            "- **The line connecting them**: The \"perfect path\" - you can't do better than these points!\n\n"
+            "**The magic rule:** On this line, if the robot tries to get better answers, it has to do less work. If it wants to do more work, it might get some answers wrong. It's the best the robot can possibly do!\n\n"
+            "## What It Means (Super Simple):\n\n"
+            "The graphs show your robot learning to be smart about when to work alone and when to ask teachers for help.\n\n"
+            "- **Good learning**: The dots move toward the \"perfect path\" over time\n"
+            "- **Smart robot**: It finds balances where it gets lots right AND does lots of work\n"
+            "- **Learning progress**: You can see if the robot is getting better at the game!\n\n"
+            "It's like watching a puppy learn tricks - sometimes it messes up, but it keeps trying and gets better. The graphs show how your robot improves at balancing \"being right\" with \"doing work\"! 🐕🤖✨\n\n"
+            "**Try this:** Change the settings and run again. Watch how the graphs change - it's like giving the robot different challenges to learn from! 🎮"
+        )
+
     hist_plot = gr.LinePlot(label="Trajectory: Coverage vs Accuracy over steps",
                             x="coverage", y="accuracy", color="tau",
                             overlay_point=True)

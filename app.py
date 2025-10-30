@@ -352,4 +352,4 @@ with gr.Blocks(title="Plan A — Adaptive Hybrid Orchestration (AHO)") as demo:
         outputs=[hist_plot, frontier_plot, loads_table]
     )
 
-demo.launch(server_name="0.0.0.0", server_port=7860)
+demo.launch()

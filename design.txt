@@ -1,0 +1,57 @@
+Plan A:
+Design a dynamic workload allocation mechanism—called Adaptive Hybrid Orchestration 
+(AHO)—that explicitly models the trade-off between coverage and accuracy in a human-AI 
+L2D system via a continuously adjustable decision boundary derived from real-time 
+performance feedback. AHO operates in two tightly coupled components: (1) a hierarchical 
+uncertainty quantifier (HUQ) that computes individual confidence scores for both human 
+experts and the AI classifier using calibrated, task-specific uncertainty proxies (e.g., 
+entropy for AI, consistency across experts and confidence calibration for humans), and (2) 
+a workload scheduler that dynamically allocates tasks based on a Pareto-optimal 
+coverage-accuracy frontier, computed from historical and real-time data.
+To instantiate HUQ, encode expert decisions as probabilistic outputs via calibration (e.g., 
+Platt scaling) and compute inter-expert disagreement via Jensen-Shannon divergence; 
+combine these with AI model uncertainty (e.g., Monte Carlo dropout or ensemble variance) 
+into a unified uncertainty score per instance. This composite uncertainty is scaled to [0,1] 
+via min-max normalization per modality, then fused via a learnable weighted sum (trained 
+on validation data) to yield a single, interpretable uncertainty score per input. This fusion 
+enables fair comparison across modalities and supports downstream decision logic.
+The scheduler uses this score as a decision threshold: if uncertainty exceeds a dynamic 
+threshold τ(t), route the instance to human experts; otherwise, rely on the AI classifier. 
+Crucially, τ(t) is not fixed but updated in real time via a reinforcement learning (RL) agent—
+specifically, a contextual bandit with linear function approximator—whose state is defined 
+by: (i) current system-wide coverage (fraction of AI-processed inputs), (ii) accuracy trend 
+(last k decisions), (iii) expert workload (e.g., time since last input, fatigue indicators if 
+available), and (iv) uncertainty distribution across modalities. The reward function is 
+defined as: R = α·Accuracy + (1−α)·Coverage − λ·WorkloadBalancePenalty, where α  ∈  [0,1] 
+is a tunable trade-off parameter, and λ penalizes imbalanced expert utilization (e.g., via 
+variance in per-expert task counts). This enables the system to autonomously explore and 
+exploit optimal τ(t) under changing conditions.
+To evaluate AHO’s efficacy, conduct a controlled, multi-phase study across three real-world 
+L2D tasks: medical triage (radiology reports), legal document classification (contract 
+clause tagging), and software defect detection (code commit analysis). For each task: (i) 
+collect 10,000 annotated instances with ground truth; (ii) obtain predictions from 5 
+calibrated human experts (with known error profiles) and a pre-trained AI model; (iii) 
+simulate deployment under varying α and workload constraints (e.g., max 60% AI usage for 
+safety). For each setting, log: (a) coverage, (b) accuracy (F1, AUC), (c) average human 
+workload per expert, (d) response time, and (e) drift in uncertainty distribution.
+Crucially, analyze the coverage-accuracy curve not as a static plot but as a time-evolving 
+manifold: extract the Pareto frontier for each α and track its evolution under AHO vs. fixed-
+threshold baselines (e.g., τ=0.5). Use statistical inference (paired t-tests, bootstrap 
+confidence intervals) to test if AHO achieves higher coverage at identical accuracy, or 
+higher accuracy at identical coverage, across all tasks. Additionally, apply causal mediation 
+analysis to isolate the impact of τ(t) adaptation on performance, controlling for 
+confounders like task difficulty and expert availability.To ensure robustness, inject controlled perturbations: (i) simulate expert fatigue (reduce 
+confidence scores after 50 tasks), (ii) introduce AI concept drift (shift in input distribution), 
+and (iii) vary the number of experts (3–7). AHO must adapt τ(t) to maintain performance—
+its ability to recover from these perturbations validates its flexibility.
+Finally, deploy AHO in a live, low-risk production setting (e.g., internal document tagging) 
+for 6 weeks with real users. Collect telemetry and conduct periodic surveys (Likert-scale) 
+on perceived fairness, trust, and workload. Use this to refine the reward function and 
+validate long-term usability.
+AHO’s design is justified: it decouples modality-specific uncertainty from global allocation 
+via a unified score, enabling transparent, interpretable trade-offs. The RL scheduler avoids 
+overfitting to static thresholds by learning from feedback, while the causal and dynamic 
+evaluation framework isolates the mechanism’s contribution. The multi-task, multi-
+constraint validation ensures generalizability. All components are modular—HUQ and 
+scheduler can be swapped—facilitating future integration of new modalities or fairness 
+constraints

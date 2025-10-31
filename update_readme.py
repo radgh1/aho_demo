@@ -1,3 +1,4 @@
+import os
 from huggingface_hub import HfApi
 
 readme_content = """---
@@ -33,6 +34,6 @@ Check out the configuration reference at https://huggingface.co/docs/hub/spaces-
 with open('temp_readme.md', 'w', encoding='utf-8') as f:
     f.write(readme_content)
 
-api = HfApi(token='REDACTED_TOKEN')
+api = HfApi(token=os.getenv('HF_TOKEN'))
 api.upload_file(path_or_fileobj='temp_readme.md', path_in_repo='README.md', repo_id='raddev1/aho_demo', repo_type='space')
 print('README.md updated successfully')

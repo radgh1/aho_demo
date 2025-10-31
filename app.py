@@ -214,8 +214,8 @@ def run_sim(task, dataset_size, batch_size, steps, k_experts, base_acc, fatigue_
 
     return hist_df, frontier, loads_df
 
-with gr.Blocks(title="Plan A — Adaptive Hybrid Orchestration (AHO)") as demo:
-    gr.Markdown("# Plan A — Adaptive Hybrid Orchestration (AHO)")
+with gr.Blocks(title="Adaptive Hybrid Orchestration (AHO)") as demo:
+    gr.Markdown("# Adaptive Hybrid Orchestration (AHO)")
     gr.Markdown(
         "Dynamic τ(t) via ε-greedy bandit over discrete thresholds. "
         "Unified uncertainty = w_ai·AI_entropy + w_h·expert_disagreement. "
@@ -223,7 +223,7 @@ with gr.Blocks(title="Plan A — Adaptive Hybrid Orchestration (AHO)") as demo:
     )
     with gr.Accordion("About This App", open=False):
         gr.Markdown(
-            "## Plan A: Adaptive Hybrid Orchestration (AHO)\n\n"
+            "## Adaptive Hybrid Orchestration (AHO)\n\n"
             "This app implements a dynamic workload allocation mechanism for human-AI hybrid systems that explicitly models the trade-off between coverage and accuracy via a continuously adjustable decision boundary derived from real-time performance feedback.\n\n"
             "### Core Components:\n\n"
             "**1. Hierarchical Uncertainty Quantifier (HUQ):**\n"

@@ -12,7 +12,7 @@ short_description: Interactive AHO simulation for human-AI decision making
 
 # 🤖 AHO Demo: Adaptive Hybrid Orchestration
 
-**Plan A for Human-AI Collaboration** - An interactive simulation that teaches you how robots and humans can work together perfectly!
+**Human-AI Collaboration** - An interactive simulation that teaches you how robots and humans can work together perfectly!
 
 [![Live Demo](https://img.shields.io/badge/🚀-Live_Demo-00ADD8)](https://radgh1-aho-demo.hf.space)
 [![GitHub](https://img.shields.io/badge/GitHub-Repository-181717)](https://github.com/radgh1/aho_demo)

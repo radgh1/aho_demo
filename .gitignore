@@ -104,3 +104,6 @@ dmypy.json
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Secrets and tokens
+huggingfacetoken.txt

@@ -650,17 +650,37 @@ with gr.Blocks(title="Plan A — Adaptive Hybrid Orchestration (AHO)") as demo:
         final_coverage = hist_df["coverage"].iloc[-1] if len(hist_df) > 0 else 0
 
         analysis.append(f"📊 **Overall Performance**: Average accuracy = {avg_accuracy:.2f}, Average coverage = {avg_coverage:.2f}")
+        
+        # Human-robot interpretation
+        human_work_pct = int(avg_coverage * 100)
+        robot_work_pct = int((1 - avg_coverage) * 100)
+        analysis.append(f"🤖👥 **Human-Robot Split**: On average, humans handled {human_work_pct}% of work, robots handled {robot_work_pct}%")
+        
         analysis.append(f"🎯 **Final State**: Accuracy = {final_accuracy:.2f}, Coverage = {final_coverage:.2f}")
+        
+        # Human-robot learning interpretation
+        final_human_work = int(final_coverage * 100)
+        final_robot_work = int((1 - final_coverage) * 100)
+        analysis.append(f"🔄 **Final Learning**: Robot learned to route {final_human_work}% to humans, handles {final_robot_work}% independently")
+        
         # Learning trend
         if len(hist_df) > 5:
             early_acc = hist_df["accuracy"].iloc[:len(hist_df)//3].mean()
             late_acc = hist_df["accuracy"].iloc[-len(hist_df)//3:].mean()
+            early_cov = hist_df["coverage"].iloc[:len(hist_df)//3].mean()
+            late_cov = hist_df["coverage"].iloc[-len(hist_df)//3:].mean()
+            
             if late_acc > early_acc + 0.02:
-                analysis.append("📈 **Learning Progress**: The system shows improvement over time!")
+                analysis.append("📈 **Learning Progress**: The robot is getting smarter at knowing when to ask humans for help!")
             elif late_acc < early_acc - 0.02:
-                analysis.append("📉 **Learning Issues**: Performance declined - check parameters.")
+                analysis.append("📉 **Learning Issues**: Performance declined - robot may not be asking humans enough or at the right times.")
             else:
-                analysis.append("➡️ **Stable Learning**: Performance remained consistent.")
+                analysis.append("➡️ **Stable Teamwork**: Humans and robot found a consistent rhythm - good synergy!")
+            
+            if late_cov > early_cov + 0.1:
+                analysis.append("👥 **Increasing Human Input**: Robot is relying more on human experts as it learns what it can't handle alone.")
+            elif late_cov < early_cov - 0.1:
+                analysis.append("🤖 **Increasing Robot Autonomy**: Robot is gaining confidence and handling more tasks independently.")
 
         # Tau distribution analysis
         tau_counts = hist_df["tau"].value_counts().sort_index()
@@ -668,26 +688,34 @@ with gr.Blocks(title="Plan A — Adaptive Hybrid Orchestration (AHO)") as demo:
         tau_range = hist_df["tau"].max() - hist_df["tau"].min()
 
         analysis.append(f"🎯 **Decision Strategy**: Most used τ = {most_common_tau} (confidence threshold)")
+        
+        if most_common_tau < 0.4:
+            analysis.append("🤖 **Robot-Dominant**: Robot learned to trust itself - asks humans only for very uncertain cases.")
+        elif most_common_tau > 0.6:
+            analysis.append("👥 **Human-Centric**: Robot learned to be cautious - asks humans frequently for verification.")
+        else:
+            analysis.append("⚖️ **Balanced Partnership**: Robot learned healthy skepticism - involves humans for moderate uncertainty.")
 
         if tau_range > 0.3:
-            analysis.append("🌈 **Exploration**: Wide range of strategies tried - good learning diversity!")
+            analysis.append("🌈 **Adaptive Learning**: Robot tried many strategies - good at finding best moments to ask humans!")
         else:
-            analysis.append("🎯 **Convergence**: Focused on specific strategies - algorithm may have converged.")
+            analysis.append("🎯 **Committed Approach**: Robot converged on one strategy - stable but less flexible.")
 
         # Performance insights
         high_acc_points = hist_df[hist_df["accuracy"] > avg_accuracy + 0.05]
         if len(high_acc_points) > 0:
             best_tau = high_acc_points["tau"].mode().iloc[0] if len(high_acc_points) > 0 else "various"
-            analysis.append(f"⭐ **High Performance**: Best accuracy achieved with τ = {best_tau}")
+            best_cov_avg = high_acc_points["coverage"].mean()
+            analysis.append(f"⭐ **Best Performance**: Achieved with τ = {best_tau} (humans handled ~{int(best_cov_avg*100)}% of best cases)")
 
         # Coverage vs Accuracy relationship
         corr = hist_df["coverage"].corr(hist_df["accuracy"])
         if corr < -0.3:
-            analysis.append("⚖️ **Trade-off**: Strong accuracy-coverage trade-off observed.")
+            analysis.append("⚖️ **Trade-off Exists**: More human involvement = better accuracy. Robot can't do as well alone on hard cases.")
         elif corr > 0.3:
-            analysis.append("🤝 **Synergy**: Accuracy and coverage tend to improve together.")
+            analysis.append("🤝 **Strong Synergy**: As humans get involved, accuracy improves significantly - great teamwork effect!")
         else:
-            analysis.append("🔄 **Balanced**: No strong relationship between accuracy and coverage.")
+            analysis.append("🔄 **Independent**: Humans and robots each perform well - robot knows which cases to keep vs. delegate.")
 
         return "\n".join(analysis)
 
@@ -700,23 +728,30 @@ with gr.Blocks(title="Plan A — Adaptive Hybrid Orchestration (AHO)") as demo:
 
         if len(frontier_df) == 1:
             analysis.append("🎯 **Single Optimal Point**: Only one Pareto-optimal solution found.")
-            analysis.append(f"📍 **Optimal Point**: Coverage = {frontier_df['coverage'].iloc[0]:.2f}, Accuracy = {frontier_df['accuracy'].iloc[0]:.2f}")
+            point = frontier_df.iloc[0]
+            analysis.append(f"📍 **Optimal Point**: Coverage = {point['coverage']:.2f}, Accuracy = {point['accuracy']:.2f}")
+            human_pct = int(point['coverage'] * 100)
+            analysis.append(f"👥🤖 **Team Composition**: Humans handle {human_pct}%, robots handle {100-human_pct}%")
         else:
             analysis.append(f"📊 **Pareto Frontier**: {len(frontier_df)} optimal trade-off points identified.")
+            analysis.append("🔬 **What This Means**: Multiple viable ways for humans and robots to collaborate effectively!")
             
             # Highlight the best spot
             if "is_best" in frontier_df.columns and (frontier_df["is_best"] == "best").any():
                 best_row = frontier_df[frontier_df["is_best"] == "best"].iloc[0]
+                best_human_pct = int(best_row['coverage'] * 100)
+                best_robot_pct = int((1 - best_row['coverage']) * 100)
                 analysis.append(f"🎯 **Algorithm's Choice**: Final learned optimal point at Coverage = {best_row['coverage']:.2f}, Accuracy = {best_row['accuracy']:.2f}")
+                analysis.append(f"🏆 **Best Team Balance**: Humans={best_human_pct}%, Robots={best_robot_pct}% (what the system converged to)")
             
             # Frontier shape analysis
             coverage_range = frontier_df["coverage"].max() - frontier_df["coverage"].min()
             accuracy_range = frontier_df["accuracy"].max() - frontier_df["accuracy"].min()
 
             if coverage_range > 0.3:
-                analysis.append("📈 **Wide Coverage Range**: System can handle varying automation levels.")
+                analysis.append("📈 **Flexible Collaboration**: System can handle varying human/robot ratios - scalable to different team sizes!")
             else:
-                analysis.append("🎯 **Narrow Coverage Range**: Limited flexibility in automation.")
+                analysis.append("🎯 **Narrow Collaboration Window**: Best results in a specific human-robot ratio - needs careful tuning.")
 
             # Best points
             max_accuracy = frontier_df["accuracy"].max()
@@ -728,24 +763,34 @@ with gr.Blocks(title="Plan A — Adaptive Hybrid Orchestration (AHO)") as demo:
             min_cov_accuracy = frontier_df[frontier_df["coverage"] == min_coverage]["accuracy"].iloc[0]
             max_cov_accuracy = frontier_df[frontier_df["coverage"] == max_coverage]["accuracy"].iloc[0]
             accuracy_gain = max_cov_accuracy - min_cov_accuracy
+            
+            min_human_pct = int(min_coverage * 100)
+            max_human_pct = int(max_coverage * 100)
 
-            analysis.append(f"� **Efficiency Metric**: At minimum coverage ({min_coverage:.2f}), achieve {min_cov_accuracy:.2f} accuracy")
-            analysis.append(f"📈 **Maximum Coverage ({max_coverage:.2f})**: Achieves {max_cov_accuracy:.2f} accuracy")
-            analysis.append(f"💰 **Accuracy Cost**: Gain {accuracy_gain:.2f} accuracy by increasing coverage from {min_coverage:.2f} to {max_coverage:.2f}")
+            analysis.append(f"🤖 **Robot-Only Approach**: At minimum coverage ({min_coverage:.2f}), robots alone achieve {min_cov_accuracy:.2f} accuracy (humans={min_human_pct}%)")
+            analysis.append(f"� **Full Collaboration**: At maximum coverage ({max_coverage:.2f}), humans + robots achieve {max_cov_accuracy:.2f} accuracy (humans={max_human_pct}%)")
+            analysis.append(f"💰 **Value of Teamwork**: Accuracy improves by {accuracy_gain:.2f} ({int(accuracy_gain*100)} percentage points) when adding human experts!")
+            
+            if accuracy_gain > 0.1:
+                analysis.append("⭐ **Huge Impact**: Humans dramatically improve robot performance on this task - strong collaboration needed!")
+            elif accuracy_gain > 0.05:
+                analysis.append("📈 **Meaningful Impact**: Humans noticeably improve results - good team synergy.")
+            else:
+                analysis.append("➡️ **Marginal Benefit**: Humans help a little - robots already pretty capable, but humans catch edge cases.")
             
             # Efficiency analysis
             if max_accuracy > avg_accuracy + 0.05:
-                analysis.append("⭐ **Strong Optimization**: Significant accuracy gains at optimal points!")
+                analysis.append("⭐ **Strong Optimization**: Sweet spots exist where team gets much better results!")
             else:
-                analysis.append("⚖️ **Balanced Frontier**: Relatively uniform performance across trade-offs.")
+                analysis.append("⚖️ **Balanced Frontier**: Performance relatively consistent - stable collaboration across strategies.")
 
             # Frontier completeness
             if len(frontier_df) > 5:
-                analysis.append("🔬 **Well-Sampled**: Frontier thoroughly explored with many data points.")
+                analysis.append("🔬 **Well-Explored**: Many optimal points discovered - robot thoroughly tested collaboration strategies!")
             elif len(frontier_df) > 2:
-                analysis.append("📍 **Moderately Sampled**: Good coverage of optimal region.")
+                analysis.append("📍 **Moderately Explored**: Good coverage of optimal region - found several good collaboration patterns.")
             else:
-                analysis.append("⚠️ **Limited Sampling**: May need more simulation steps for complete frontier.")
+                analysis.append("⚠️ **Limited Options**: Few optimal points - may need more simulation to discover all collaboration strategies.")
 
         return "\n".join(analysis)
 
@@ -787,4 +832,4 @@ with gr.Blocks(title="Plan A — Adaptive Hybrid Orchestration (AHO)") as demo:
         outputs=[frontier_interpretation]
     )
 
-demo.launch(server_port=7861)
+demo.launch(server_port=8000)

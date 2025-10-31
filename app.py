@@ -194,8 +194,18 @@ def run_sim(task, dataset_size, batch_size, steps, k_experts, base_acc, fatigue_
         frontier = hist_df.sort_values("coverage").copy()
         frontier["max_acc"] = frontier["accuracy"].cummax()
         frontier = frontier[frontier["accuracy"] == frontier["max_acc"]].drop(columns=["max_acc"])
+        
+        # Identify the "best spot" - the final learned optimal point
+        if len(hist_df) > 0:
+            final_tau = hist_df["tau"].iloc[-1]
+            # Find the frontier point closest to the final learned tau
+            frontier["tau_diff"] = (frontier["tau"] - final_tau).abs()
+            best_spot_idx = frontier["tau_diff"].idxmin()
+            frontier["is_best"] = "other"
+            frontier.loc[best_spot_idx, "is_best"] = "best"
+            frontier = frontier.drop(columns=["tau_diff"])
     else:
-        frontier = pd.DataFrame(columns=["coverage", "accuracy"])
+        frontier = pd.DataFrame(columns=["coverage", "accuracy", "is_best"])
 
     loads_df = pd.DataFrame({
         "expert": [f"E{i}" for i in range(len(st["per_expert_load"]))],
@@ -248,7 +258,7 @@ with gr.Blocks(title="Plan A — Adaptive Hybrid Orchestration (AHO)") as demo:
             "**The Robot's Job:**\n"
             "- The robot tries to answer questions about pictures (like finding sick spots in X-rays), legal papers, or computer code\n"
             "- For each question, the robot gives an answer AND says how sure it is (like \"I'm 80% sure this is right\")\n\n"
-            "**The Expert Helpers:**\n"
+            "**The Expert humans:**\n"
             "- There are a few teacher experts who can also answer the questions\n"
             "- But teachers get tired after doing lots of work - they might make more mistakes when they're tired\n"
             "- The robot tries to share the work fairly so no teacher gets too tired\n\n"
@@ -367,10 +377,6 @@ with gr.Blocks(title="Plan A — Adaptive Hybrid Orchestration (AHO)") as demo:
             "- **NumPy** - Numerical computing and array operations\n"
             "- **Pandas** - Data manipulation and DataFrame handling\n"
             "- **Collections.deque** - Efficient data structures for simulation history\n\n"
-            "### **Deployment Platform:**\n"
-            "- **Hugging Face Spaces** - Cloud hosting platform for ML demos\n"
-            "  - Automatic scaling and containerization\n"
-            "  - Free hosting for public demos\n\n"
             "## **Architecture Components:**\n\n"
             "### **Simulation Engine:**\n"
             "- **Contextual Bandit Algorithm** - ε-greedy reinforcement learning\n"
@@ -449,7 +455,7 @@ with gr.Blocks(title="Plan A — Adaptive Hybrid Orchestration (AHO)") as demo:
             "**Steps** (5-200):\n"
             "How many rounds of the game to play. More steps = robot gets more practice learning!\n\n"
             "**Number of Experts (K)** (3-7):\n"
-            "How many teacher helpers are available. More teachers = more help, but robot has to share work fairly.\n\n"
+            "How many teacher humans are available. More teachers = more help, but robot has to share work fairly.\n\n"
             "**Human Base Accuracy** (0.6-0.99):\n"
             "How good the teachers usually are at the start. 0.99 = almost perfect teachers, 0.6 = teachers who make mistakes sometimes.\n\n"
             "**Fatigue After N Tasks** (20-200):\n"
@@ -540,42 +546,58 @@ with gr.Blocks(title="Plan A — Adaptive Hybrid Orchestration (AHO)") as demo:
 
     with gr.Accordion("Understanding the Graphs (Simple Explanation)", open=False):
         gr.Markdown(
-            "## The First Graph: \"The Robot's Learning Journey\" 📈\n\n"
-            "This graph is like a **map of the robot's adventure** over time. It shows:\n\n"
-            "- **Up and down (Y-axis)**: How good the robot's answers are (accuracy) - higher is better!\n"
-            "- **Left to right (X-axis)**: How much work the robot does by itself (coverage) - more to the right means the robot does more work\n"
-            "- **Colors**: Different shades show how \"brave\" the robot is being (the confidence level it chooses)\n\n"
-            "**What you see:** The robot starts somewhere and moves around, trying different strategies. Sometimes it gets better at answers, sometimes it does more work. The colored dots show its path - like footprints in the snow showing where it walked!\n\n"
-            "## The Second Graph: \"The Robot's Best Spots\" 🎯\n\n"
-            "This graph shows the **perfect hiding spots** - the absolute best balances the robot found. It's like:\n\n"
-            "- **Each dot**: A \"sweet spot\" where the robot found a really good balance\n"
-            "- **The line connecting them**: The \"perfect path\" - you can't do better than these points!\n\n"
-            "**The magic rule:** On this line, if the robot tries to get better answers, it has to do less work. If it wants to do more work, it might get some answers wrong. It's the best the robot can possibly do!\n\n"
-            "## What It Means (Super Simple):\n\n"
-            "The graphs show your robot learning to be smart about when to work alone and when to ask teachers for help.\n\n"
-            "- **Good learning**: The dots move toward the \"perfect path\" over time\n"
-            "- **Smart robot**: It finds balances where it gets lots right AND does lots of work\n"
-            "- **Learning progress**: You can see if the robot is getting better at the game!\n\n"
-            "It's like watching a puppy learn tricks - sometimes it messes up, but it keeps trying and gets better. The graphs show how your robot improves at balancing \"being right\" with \"doing work\"! 🐕🤖✨\n\n"
+            "## **Understanding the Graphs: A Treasure Map for AI-Human Teams!** 🗺️🤖\n\n"
+            "Imagine the graphs are like **treasure maps** showing how well robots and people work together on tasks! They help you find the perfect balance between speed and accuracy.\n\n"
+            "## **The First Graph: \"The Robot's Learning Journey\" 📈**\n\n"
+            "This graph shows the robot's **adventure over time** as it learns the best way to work with human experts.\n\n"
+            "### **X-Axis (Bottom): Coverage** 📊\n"
+            "- **What it measures**: How much of the work goes to human experts for checking\n"
+            "- **Left side (0.0)**: Robots do almost everything alone - very little human checking\n"
+            "- **Right side (1.0)**: Humans check almost everything - robots ask for lots of help\n"
+            "- **Middle (0.5)**: Robots and humans share the work equally\n\n"
+            "### **Y-Axis (Side): Accuracy** 🎯\n"
+            "- **What it measures**: How many answers are correct overall\n"
+            "- **Bottom (lower numbers)**: More mistakes, like getting questions wrong on a test\n"
+            "- **Top (higher numbers)**: Fewer mistakes, like getting a good score\n"
+            "- **Higher is always better!**\n\n"
+            "### **Colors: Decision Threshold (τ)** 🎨\n"
+            "- **Light Orange (Low τ: 0.1-0.3)**: Brave robots that trust themselves more\n"
+            "- **Medium Orange (Medium τ: 0.4-0.6)**: Balanced approach\n"
+            "- **Dark Orange (High τ: 0.7-0.9)**: Cautious robots that ask for help more often\n\n"
+            "**What you see:** The robot starts somewhere and moves around, trying different strategies. Sometimes it gets better accuracy, sometimes it changes how much help it asks for. The colored dots show its learning path!\n\n"
+            "## **The Second Graph: \"The Robot's Best Spots\" 🎯**\n\n"
+            "This graph shows the **perfect balances** - the absolute best trade-offs the robot discovered.\n\n"
+            "**X-axis (Coverage: 0-1 scale):** Shows what fraction of tasks get sent to human experts for checking. Higher values = more human involvement.\n"
+            "**Y-axis (Accuracy: 0-1 scale):** Shows what fraction of answers are correct. Higher values = fewer mistakes.\n\n"
+            "- **Each dot**: A \"sweet spot\" where the robot found an excellent balance\n"
+            "- **🎯 Red bullseye**: The algorithm's final learned optimal point (where it decided to settle)\n"
+            "- **The line connecting them**: The \"optimal frontier\" - you can't do better than these points!\n\n"
+            "**The magic rule:** On this line, if you want higher accuracy (fewer mistakes), you need more human checking (higher coverage). If you want faster processing (lower coverage), you might get slightly lower accuracy. It's the best possible trade-off!\n\n"
+            "## **The Big Picture** 🌟\n\n"
+            "The graphs show your robot learning to be smart about **when to work alone and when to ask human experts for help**.\n\n"
+            "- **Good learning**: The dots move toward better accuracy and find optimal coverage levels\n"
+            "- **Smart robot**: Discovers balances where it gets lots right while using human help efficiently\n"
+            "- **Learning progress**: You can see if the robot is getting better at this teamwork!\n\n"
+            "It's like watching a puppy learn tricks - sometimes it makes mistakes, but it keeps trying and gets better at knowing when it needs help. The graphs show how robots and humans can work together perfectly! 🐕🤖✨\n\n"
             "**Try this:** Change the settings and run again. Watch how the graphs change - it's like giving the robot different challenges to learn from! 🎮"
         )
         gr.Markdown(
             "## **Color Coding in the Trajectory Graph** 🎨\n\n"
             "The first graph uses colors to show the **decision threshold (τ)** that the system is using at each step. Think of this like **decision-making algorithms** in apps you use every day:\n\n"
             "### **Light Orange (Low τ: 0.1-0.3)**\n"
-            "- **Risk-averse strategy**: The system plays it super safe\n"
-            "- **High human intervention**: Most tasks get double-checked by experts\n"
-            "- **Prioritizes accuracy over speed**: Like when TikTok's algorithm is extra cautious about what content to show you\n"
-            "- **Result**: Better quality control, but slower and more expensive (uses more human time)\n\n"
+            "- **Risk-taking strategy**: The system trusts the AI more\n"
+            "- **Low human intervention**: Only very uncertain cases get human review\n"
+            "- **Prioritizes efficiency over perfection**: Like when Netflix recommends shows with some risk of you not liking them\n"
+            "- **Result**: Faster processing, but occasionally lower accuracy\n\n"
             "### **Medium Orange (Medium τ: 0.4-0.6)**\n"
             "- **Balanced approach**: Moderate risk-taking\n"
             "- **Mixed intervention**: Some tasks stay with AI, some go to humans\n"
             "- **Sweet spot**: Often where the algorithm converges after learning\n\n"
             "### **Dark Orange (High τ: 0.7-0.9)**\n"
-            "- **Risk-taking strategy**: The system trusts the AI more\n"
-            "- **Low human intervention**: Only very uncertain cases get human review\n"
-            "- **Prioritizes efficiency over perfection**: Like when Netflix recommends shows with some risk of you not liking them\n"
-            "- **Result**: Faster processing, but occasionally lower accuracy\n\n"
+            "- **Risk-averse strategy**: The system plays it super safe\n"
+            "- **High human intervention**: Most tasks get double-checked by experts\n"
+            "- **Prioritizes accuracy over speed**: Like when TikTok's algorithm is extra cautious about what content to show you\n"
+            "- **Result**: Better quality control, but slower and more expensive (uses more human time)\n\n"
             "## **The Learning Process** 🧠\n\n"
             "The reinforcement learning algorithm tries different **confidence levels** and learns which ones give the best overall score. The reward function balances:\n\n"
             "- **Accuracy** (getting things right)\n"
@@ -596,7 +618,13 @@ with gr.Blocks(title="Plan A — Adaptive Hybrid Orchestration (AHO)") as demo:
         interpret_trajectory_btn = gr.Button("🔍 Interpret Trajectory")
         trajectory_interpretation = gr.Textbox(label="Trajectory Analysis", lines=6, interactive=False, value="Click 'Interpret Trajectory' to analyze the learning progress and patterns.")
 
-    frontier_plot = gr.ScatterPlot(label="Observed Pareto-like frontier (max accuracy by coverage)", x="coverage", y="accuracy")
+    frontier_plot = gr.ScatterPlot(
+        label="Observed Pareto-like frontier (max accuracy by coverage) - Red dot marks the algorithm's final learned optimal point", 
+        x="coverage", 
+        y="accuracy",
+        color="is_best",
+        color_map={"best": "red", "other": "lightgray"}
+    )
     with gr.Row():
         interpret_frontier_btn = gr.Button("🔍 Interpret Frontier")
         frontier_interpretation = gr.Textbox(label="Frontier Analysis", lines=6, interactive=False, value="Click 'Interpret Frontier' to analyze the optimal trade-offs achieved.")
@@ -605,8 +633,8 @@ with gr.Blocks(title="Plan A — Adaptive Hybrid Orchestration (AHO)") as demo:
 
     def _plot(hist_df, frontier_df):
         if hist_df is None or len(hist_df)==0:
-            return pd.DataFrame(columns=["coverage","accuracy","tau"]), pd.DataFrame(columns=["coverage","accuracy"])
-        return hist_df[["coverage","accuracy","tau"]], frontier_df[["coverage","accuracy"]]
+            return pd.DataFrame(columns=["coverage","accuracy","tau"]), pd.DataFrame(columns=["coverage","accuracy","is_best"])
+        return hist_df[["coverage","accuracy","tau"]], frontier_df[["coverage","accuracy","is_best"]]
 
     def analyze_trajectory(hist_df):
         """Analyze the trajectory plot and provide insights."""
@@ -675,7 +703,12 @@ with gr.Blocks(title="Plan A — Adaptive Hybrid Orchestration (AHO)") as demo:
             analysis.append(f"📍 **Optimal Point**: Coverage = {frontier_df['coverage'].iloc[0]:.2f}, Accuracy = {frontier_df['accuracy'].iloc[0]:.2f}")
         else:
             analysis.append(f"📊 **Pareto Frontier**: {len(frontier_df)} optimal trade-off points identified.")
-
+            
+            # Highlight the best spot
+            if "is_best" in frontier_df.columns and (frontier_df["is_best"] == "best").any():
+                best_row = frontier_df[frontier_df["is_best"] == "best"].iloc[0]
+                analysis.append(f"🎯 **Algorithm's Choice**: Final learned optimal point at Coverage = {best_row['coverage']:.2f}, Accuracy = {best_row['accuracy']:.2f}")
+            
             # Frontier shape analysis
             coverage_range = frontier_df["coverage"].max() - frontier_df["coverage"].min()
             accuracy_range = frontier_df["accuracy"].max() - frontier_df["accuracy"].min()
@@ -688,11 +721,19 @@ with gr.Blocks(title="Plan A — Adaptive Hybrid Orchestration (AHO)") as demo:
             # Best points
             max_accuracy = frontier_df["accuracy"].max()
             max_coverage = frontier_df["coverage"].max()
-
-            analysis.append(f"🎯 **Maximum Accuracy**: {max_accuracy:.2f} (best quality achieved)")
-            analysis.append(f"📈 **Maximum Coverage**: {max_coverage:.2f} (most automation achieved)")
-            # Efficiency analysis
+            min_coverage = frontier_df["coverage"].min()
             avg_accuracy = frontier_df["accuracy"].mean()
+            
+            # Calculate accuracy gain from minimum coverage to maximum coverage
+            min_cov_accuracy = frontier_df[frontier_df["coverage"] == min_coverage]["accuracy"].iloc[0]
+            max_cov_accuracy = frontier_df[frontier_df["coverage"] == max_coverage]["accuracy"].iloc[0]
+            accuracy_gain = max_cov_accuracy - min_cov_accuracy
+
+            analysis.append(f"� **Efficiency Metric**: At minimum coverage ({min_coverage:.2f}), achieve {min_cov_accuracy:.2f} accuracy")
+            analysis.append(f"📈 **Maximum Coverage ({max_coverage:.2f})**: Achieves {max_cov_accuracy:.2f} accuracy")
+            analysis.append(f"💰 **Accuracy Cost**: Gain {accuracy_gain:.2f} accuracy by increasing coverage from {min_coverage:.2f} to {max_coverage:.2f}")
+            
+            # Efficiency analysis
             if max_accuracy > avg_accuracy + 0.05:
                 analysis.append("⭐ **Strong Optimization**: Significant accuracy gains at optimal points!")
             else:
@@ -746,4 +787,4 @@ with gr.Blocks(title="Plan A — Adaptive Hybrid Orchestration (AHO)") as demo:
         outputs=[frontier_interpretation]
     )
 
-demo.launch()
+demo.launch(server_port=7861)

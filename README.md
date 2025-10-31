@@ -14,7 +14,7 @@ short_description: Interactive AHO simulation for human-AI decision making
 
 **Human-AI Collaboration** - An interactive simulation that teaches you how robots and humans can work together perfectly!
 
-[![Live Demo](https://img.shields.io/badge/🚀-Live_Demo-00ADD8)](https://radgh1-aho-demo.hf.space)
+[![Live Demo](https://img.shields.io/badge/🚀-Live_Demo-00ADD8)](https://huggingface.co/spaces/raddev1/aho_demo)
 [![GitHub](https://img.shields.io/badge/GitHub-Repository-181717)](https://github.com/radgh1/aho_demo)
 
 ## 🎯 What This App Does
@@ -113,7 +113,7 @@ Reward = α × Accuracy + (1-α) × Coverage - λ × WorkloadImbalance
 ## 🚀 Getting Started
 
 ### **Online Demo**
-Visit the [live demo](https://radgh1-aho-demo.hf.space) to try it right now!
+Visit the [live demo](https://huggingface.co/spaces/raddev1/aho_demo) to try it right now!
 
 ### **Local Installation**
 ```bash
@@ -200,4 +200,4 @@ Built with:
 
 **Ready to see AI and humans work together perfectly?** 🚀🤖👥
 
-[Try the Live Demo Now!](https://radgh1-aho-demo.hf.space)
+[Try the Live Demo Now!](https://huggingface.co/spaces/raddev1/aho_demo)
